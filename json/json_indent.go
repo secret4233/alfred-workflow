@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	workflow *aw.Workflow
+	wf *aw.Workflow
 
 	icon = &aw.Icon{
 		Value: aw.IconClock.Value,
@@ -27,7 +27,7 @@ func run() {
 
 	var err error
 
-	args := workflow.Args()
+	args := wf.Args()
 
 	if len(args) == 0 {
 		return
@@ -35,7 +35,7 @@ func run() {
 
 	defer func() {
 		if err == nil {
-			workflow.SendFeedback()
+			wf.SendFeedback()
 			return
 		}
 	}()
@@ -53,7 +53,7 @@ func run() {
 	}
 
 	jsonFormat := ans.String()
-	workflow.NewItem("格式化后的字符串").
+	wf.NewItem("格式化后的字符串").
 		Subtitle("json format").
 		Icon(icon).
 		Arg(jsonFormat).
@@ -61,6 +61,6 @@ func run() {
 }
 
 func main() {
-	workflow = aw.New()
-	workflow.Run(run)
+	wf = aw.New()
+	wf.Run(run)
 }

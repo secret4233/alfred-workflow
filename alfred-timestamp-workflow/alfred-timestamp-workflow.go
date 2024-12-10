@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	aw "github.com/deanishe/awgo"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	aw "github.com/deanishe/awgo"
 )
+
 var (
 	workflow *aw.Workflow
 
@@ -34,6 +36,7 @@ var (
 		"2006-01-02 15:04:05.999",
 	}
 
+	CNZone          = time.FixedZone("CST", 8*3600)
 	regexpTimestamp = regexp.MustCompile(`^[1-9]{1}\d+$`)
 )
 
@@ -76,7 +79,6 @@ func run() {
 	err = processTimeStr(input)
 }
 
-
 func processNow() {
 
 	now := time.Now()
@@ -117,6 +119,7 @@ func processTimeStr(timestr string) error {
 			return errors.New("no matched time layout found")
 		}
 	}
+	timestamp = timestamp.In(time.FixedZone("CST", 8*3600))
 
 	// prepend unix timestamp
 	secs := fmt.Sprintf("%d", timestamp.Unix())
@@ -143,9 +146,8 @@ func processTimeStr(timestr string) error {
 }
 
 func matchedLayout(layouts []string, timestr string) (matched string, timestamp time.Time, ok bool) {
-
 	for _, layout := range layouts {
-		v, err := time.Parse(layout, timestr)
+		v, err := time.ParseInLocation(layout, timestr, CNZone)
 		if err == nil {
 			return layout, v, true
 		}
