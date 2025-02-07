@@ -1,10 +1,10 @@
 use clap::Parser;
 use serde_json::{Map, Value};
-use std::io::Write;
-use tempfile::NamedTempFile;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use serde::Serialize;
+use std::io::Write;
+use tempfile::NamedTempFile;
 
 #[derive(Parser)]
 #[command(name = "json-viewer")]
@@ -44,33 +44,9 @@ fn parse_json_recursive(value: &Value) -> Value {
     }
 }
 
-fn create_temp_html(json: &Value) -> std::io::Result<NamedTempFile> {
+fn create_temp_json(json: &Value) -> std::io::Result<NamedTempFile> {
     let mut file = NamedTempFile::new()?;
-    write!(
-        file,
-        r#"<!DOCTYPE html>
-<html>
-<head>
-    <title>JSON Viewer</title>
-    <link href="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/jsoneditor@9.10.0/dist/jsoneditor.min.js"></script>
-    <style type="text/css">
-        #jsoneditor {{ height: 100vh; }}
-    </style>
-</head>
-<body>
-    <div id="jsoneditor"></div>
-    <script>
-        const container = document.getElementById("jsoneditor");
-        const options = {{mode: 'view'}};
-        const editor = new JSONEditor(container, options);
-        const json = {};
-        editor.set(json);
-    </script>
-</body>
-</html>"#,
-        serde_json::to_string(json)?
-    )?;
+    write!(file, "{}", serde_json::to_string_pretty(json)?)?;
     Ok(file)
 }
 
@@ -82,15 +58,26 @@ fn main() {
         Ok(json) => {
             let parsed = parse_json_recursive(&json);
             
-            // 创建两个选项
-            let mut vars = HashMap::new();
-            vars.insert(Cow::from("json"), Cow::from(serde_json::to_string(&parsed).unwrap()));
+            // 添加直接查看选项
+            let mut original_vars = HashMap::new();
+            original_vars.insert(Cow::from("json"), Cow::from(cli.json_text.clone()));
 
             items.push(ScriptFilterItem {
-                title: Cow::from("查看解析后的 JSON"),
-                subtitle: Some(Cow::from("在浏览器中打开 JSON 查看器")),
+                title: Cow::from("直接查看原始 JSON"),
+                subtitle: Some(Cow::from("在浏览器中打开原始 JSON 查看器")),
                 arg: Some(Cow::from("browser")),
-                variables: Some(vars)
+                variables: Some(original_vars)
+            });
+
+            // 添加递归解析后查看选项
+            let mut parsed_vars = HashMap::new();
+            parsed_vars.insert(Cow::from("json"), Cow::from(serde_json::to_string(&parsed).unwrap()));
+
+            items.push(ScriptFilterItem {
+                title: Cow::from("查看递归解析后的 JSON"),
+                subtitle: Some(Cow::from("在浏览器中打开递归解析后的 JSON 查看器")),
+                arg: Some(Cow::from("browser")),
+                variables: Some(parsed_vars)
             });
 
             items.push(ScriptFilterItem {
@@ -114,7 +101,7 @@ fn main() {
         if args == "browser" {
             if let Some(json_str) = std::env::var("json").ok() {
                 if let Ok(json) = serde_json::from_str(&json_str) {
-                    if let Ok(file) = create_temp_html(&json) {
+                    if let Ok(file) = create_temp_json(&json) {
                         let path = file.path().to_str().unwrap();
                         webbrowser::open(&format!("file://{}", path)).ok();
                         std::mem::forget(file); // 保持文件直到浏览器打开
