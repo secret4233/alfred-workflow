@@ -2,7 +2,7 @@
 
 BUILD_DIR = target/release
 WORKFLOW_DIR = workflow
-WORKFLOW_NAME = json_test.alfredworkflow
+WORKFLOW_NAME = json_viewer.alfredworkflow
 ALFRED_WORKFLOW_DIR = "/Users/bytedance/Nutstore Files/data/Alfred.alfredpreferences/workflows"
 
 all: build package
